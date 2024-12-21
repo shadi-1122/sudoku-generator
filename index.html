@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page with 5 Cards</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 250px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-10px);
+        }
+        .card img {
+            width: 100%;
+            border-radius: 8px;
+        }
+        .card h3 {
+            margin-top: 15px;
+            font-size: 1.5em;
+            color: #333;
+        }
+        .card p {
+            font-size: 1em;
+            color: #666;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .heading {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 2.5em;
+            color: #333;
+        }
+        .form-container {
+            margin-top: 40px;
+            text-align: center;
+            width: 100%;
+        }
+        .form-container select, .form-container input {
+            padding: 10px;
+            font-size: 1em;
+            margin: 10px;
+            width: 200px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .form-container button {
+            background-color: #FF5733;
+            color: white;
+            font-size: 1.2em;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background-color: #e44d29;
+        }
+        @media (max-width: 768px) {
+            .card {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="heading">Welcome to Our Home Page</h1>
+    <div class="container">
+        <div class="card">
+            <img src="https://via.placeholder.com/250x150" alt="Card Image 1">
+            <h3>Card 1</h3>
+            <p>This is a description for card 1.</p>
+            <button class="button" onclick="window.open('easy.html')">Generate</button>
+        </div>
+        <div class="card">
+            <img src="https://via.placeholder.com/250x150" alt="Card Image 2">
+            <h3>Card 2</h3>
+            <p>This is a description for card 2.</p>
+            <button class="button" onclick="window.open('medium.html')">Generate</button>
+        </div>
+        <div class="card">
+            <img src="https://via.placeholder.com/250x150" alt="Card Image 3">
+            <h3>Card 3</h3>
+            <p>This is a description for card 3.</p>
+            <button class="button" onclick="window.open('hard.html')">Generate</button>
+        </div>
+        <div class="card">
+            <img src="https://via.placeholder.com/250x150" alt="Card Image 4">
+            <h3>Card 4</h3>
+            <p>This is a description for card 4.</p>
+            <button class="button" onclick="window.open('harder.html')">Generate</button>
+        </div>
+        <div class="card">
+            <img src="https://via.placeholder.com/250x150" alt="Card Image 5">
+            <h3>Card 5</h3>
+            <p>This is a description for card 5.</p>
+            <button class="button" onclick="window.open('hardest.html')">Generate</button>
+        </div>
+    </div>
+
+    <div class="form-container">
+        <h2>Select Puzzle Level and Count</h2>
+        <select id="levelSelect">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+            <option value="harder">Harder</option>
+            <option value="hardest">Hardest</option>
+        </select>
+        <input type="number" id="countInput" placeholder="Enter number of puzzles" min="1" max="100" />
+        <button onclick="generatePdf()">Generate PDF</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        function generatePdf() {
+            const { jsPDF } = window.jspdf;
+    
+            const level = document.getElementById('levelSelect').value;
+            const count = document.getElementById('countInput').value;
+    
+            if (!count || count <= 0) {
+                alert('Please enter a valid number of puzzles.');
+                return;
+            }
+    
+            const doc = new jsPDF();
+    
+            // Generate Sudoku puzzles
+            const puzzles = generateSudokuPuzzles(level, count);
+    
+            const puzzleWidth = 50; // Width of each Sudoku puzzle
+            const puzzleHeight = 50; // Height of each Sudoku puzzle
+            const spacing = 12; // Space between puzzles (set to 8px)
+            const puzzlesPerRow = 3; // Puzzles per row
+            const puzzlesPerColumn = 4; // Puzzles per column
+    
+            let xPos = 10;
+            let yPos = 10;
+    
+            puzzles.forEach((puzzle, index) => {
+                if (index > 0 && index % puzzlesPerRow === 0) {
+                    yPos += puzzleHeight + spacing; // Move to next row
+                    xPos = 10; // Reset x position to the start of the page
+                } else if (index > 0) {
+                    xPos += puzzleWidth + spacing; // Move to the next column in the row
+                }
+    
+                // Add Sudoku puzzle to the PDF
+                if (index % (puzzlesPerRow * puzzlesPerColumn) === 0 && index !== 0) {
+                    doc.addPage(); // Add a new page after filling one page with puzzles
+                    xPos = 10; // Reset x position
+                    yPos = 10; // Reset y position
+                }
+    
+                drawSudoku(doc, puzzle, xPos, yPos);
+            });
+    
+            // Save the generated PDF
+            doc.save('sudoku_puzzles.pdf');
+        }
+    
+        // Function to draw a Sudoku grid on the PDF
+        function drawSudoku(doc, grid, xPos, yPos) {
+            const cellSize = 6; // Size of each Sudoku cell
+            const fontSize = 12; // Font size for numbers
+    
+            // Draw the bold border around the entire Sudoku grid (1px for a thinner bold line)
+            doc.setLineWidth(0.5); // Set the line width to 1px for a thinner bold border
+            doc.rect(xPos - 0.01, yPos - 0.01, 9 * cellSize + 0.01, 9 * cellSize + 0.01); // Draw a bold rectangle around the entire grid
+    
+            // Draw the thin borders for each individual cell
+            doc.setLineWidth(0.01); // Set the line width for the thin borders
+    
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    // Draw a border for each individual cell
+                    doc.rect(xPos + j * cellSize, yPos + i * cellSize, cellSize, cellSize);
+    
+                    if (grid[i][j] !== 0) {
+                        // Draw the number inside the cell
+                        doc.setFontSize(fontSize);
+                        doc.text(grid[i][j].toString(), xPos + j * cellSize + 2, yPos + i * cellSize + 4);
+                    }
+                }
+            }
+        }
+    
+        // Sudoku puzzle generation (backtracking algorithm)
+        function generateValidSudoku(level) {
+            const grid = Array.from({ length: 9 }, () => Array(9).fill(0));
+            fillGrid(grid);
+            removeCells(grid, level);  // Remove cells based on level to create a puzzle
+            return grid;
+        }
+    
+        // Function to fill a Sudoku grid using backtracking
+        function fillGrid(grid) {
+            const isValid = (grid, row, col, num) => {
+                for (let i = 0; i < 9; i++) {
+                    if (grid[row][i] === num || grid[i][col] === num) return false;
+                    const boxRow = Math.floor(row / 3) * 3 + Math.floor(i / 3);
+                    const boxCol = Math.floor(col / 3) * 3 + (i % 3);
+                    if (grid[boxRow][boxCol] === num) return false;
+                }
+                return true;
+            };
+    
+            const solve = () => {
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        if (grid[row][col] === 0) {
+                            const nums = [...Array(9).keys()].map(x => x + 1).sort(() => Math.random() - 0.5);
+                            for (let num of nums) {
+                                if (isValid(grid, row, col, num)) {
+                                    grid[row][col] = num;
+                                    if (solve()) return true;
+                                    grid[row][col] = 0;
+                                }
+                            }
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            };
+            solve();
+        }
+    
+        // Function to remove cells based on difficulty level
+        function removeCells(grid, level) {
+            let count;
+            switch (level) {
+                case 'easy':
+                    count = 35; break;
+                case 'medium':
+                    count = 40; break;
+                case 'hard':
+                    count = 45; break;
+                case 'harder':
+                    count = 50; break;
+                case 'hardest':
+                    count = 55; break;
+            }
+            let removed = 0;
+            while (removed < count) {
+                const row = Math.floor(Math.random() * 9);
+                const col = Math.floor(Math.random() * 9);
+                if (grid[row][col] !== 0) {
+                    grid[row][col] = 0;
+                    removed++;
+                }
+            }
+        }
+    
+        // Function to generate Sudoku puzzles for the selected count and level
+        function generateSudokuPuzzles(level, count) {
+            const puzzles = [];
+            for (let i = 0; i < count; i++) {
+                puzzles.push(generateValidSudoku(level)); // Replace with real puzzle generation logic
+            }
+            return puzzles;
+        }
+    </script>
+    
+</body>
+</html>

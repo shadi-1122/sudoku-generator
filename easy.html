@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Creator</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .sudoku {
+            display: grid;
+            grid-template-columns: repeat(9, 40px);
+            grid-template-rows: repeat(9, 40px);
+            gap: 0;
+            background-color: #000;
+            padding: 5px;
+            border: 2px solid #000;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            border: 1px solid #ccc;
+        }
+        .cell.read-only {
+            background-color: #ddd;
+            color: #555;
+        }
+        .cell:nth-child(3n+4) {
+            border-left: 2px solid black;
+        }
+        .cell:nth-child(-n+27):nth-last-child(3n+1) {
+            border-right: 2px solid black;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .count {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="sudoku" id="sudokuGrid"></div>
+    <button id="nextButton">Next Puzzle</button>
+    <button id="saveButton">Save Puzzle</button>
+    <button id="generatePdfButton">Generate PDF</button>
+    <div class="count" id="sudokuCount">Saved Puzzles: 0</div>
+
+    <script>
+        let savedSudokus = [];
+
+        function createEmptyGrid() {
+            return Array.from({ length: 9 }, () => Array(9).fill(0));
+        }
+
+        function isValid(grid, row, col, num) {
+            for (let i = 0; i < 9; i++) {
+                if (grid[row][i] === num || grid[i][col] === num) return false;
+
+                const boxRow = 3 * Math.floor(row / 3) + Math.floor(i / 3);
+                const boxCol = 3 * Math.floor(col / 3) + (i % 3);
+                if (grid[boxRow][boxCol] === num) return false;
+            }
+            return true;
+        }
+
+        function fillGrid(grid) {
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (grid[row][col] === 0) {
+                        const numbers = [...Array(9).keys()].map((x) => x + 1).sort(() => Math.random() - 0.5);
+
+                        for (let num of numbers) {
+                            if (isValid(grid, row, col, num)) {
+                                grid[row][col] = num;
+
+                                if (fillGrid(grid)) return true;
+                                grid[row][col] = 0;
+                            }
+                        }
+
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function removeCells(grid, count) {
+            while (count > 0) {
+                const row = Math.floor(Math.random() * 9);
+                const col = Math.floor(Math.random() * 9);
+
+                if (grid[row][col] !== 0) {
+                    grid[row][col] = 0;
+                    count--;
+                }
+            }
+        }
+
+        function generateSudoku() {
+            const grid = createEmptyGrid();
+            fillGrid(grid);
+            removeCells(grid, 40); // Remove 40 cells to create a puzzle
+            return grid;
+        }
+
+        function renderGrid(grid) {
+            const container = document.getElementById('sudokuGrid');
+            container.innerHTML = '';
+
+            grid.forEach((row, rowIndex) => {
+                row.forEach((value, colIndex) => {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+
+                    if (value !== 0) {
+                        cell.textContent = value;
+                        cell.classList.add('read-only');
+                    }
+
+                    if (rowIndex % 3 === 0 && rowIndex !== 0) {
+                        cell.style.borderTop = '3px solid black';
+                    }
+                    if (colIndex % 3 === 0 && colIndex !== 0) {
+                        cell.style.borderLeft = '3px solid black';
+                    }
+
+                    container.appendChild(cell);
+                });
+            });
+        }
+
+        function loadNewPuzzle() {
+            const sudokuGrid = generateSudoku();
+            renderGrid(sudokuGrid);
+        }
+
+        function savePuzzle() {
+            const grid = [];
+            const cells = document.querySelectorAll('.cell');
+            let index = 0;
+
+            for (let row = 0; row < 9; row++) {
+                const rowValues = [];
+                for (let col = 0; col < 9; col++) {
+                    const value = cells[index].textContent ? parseInt(cells[index].textContent) : 0;
+                    rowValues.push(value);
+                    index++;
+                }
+                grid.push(rowValues);
+            }
+
+            savedSudokus.push(grid);
+            updateSavedCount();
+        }
+
+        function updateSavedCount() {
+            document.getElementById('sudokuCount').textContent = `Saved Puzzles: ${savedSudokus.length}`;
+        }
+
+        function generatePdf() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const puzzleWidth = 55;  // Width of each puzzle grid
+            const puzzleHeight = 55; // Height of each puzzle grid
+            const xOffset = 10;      // X offset for positioning
+            const yOffset = 10;      // Y offset for positioning
+            const spaceBetween = 5;  // Space between puzzles
+            const puzzlesPerRow = 3; // Number of puzzles per row (3 per row)
+            const puzzlesPerCol = 4; // Number of puzzles per column (4 per column)
+
+            let xPos = xOffset;
+            let yPos = yOffset;
+            let currentRow = 0;
+
+            savedSudokus.forEach((sudoku, idx) => {
+                if (currentRow === puzzlesPerCol) {
+                    // Move to the next page when we reach the row limit
+                    doc.addPage();
+                    currentRow = 0;
+                    xPos = xOffset;
+                    yPos = yOffset;
+                }
+
+                drawSudoku(doc, sudoku, xPos, yPos);
+
+                // Move to the next position in the current row
+                xPos += puzzleWidth + spaceBetween;
+
+                if ((idx + 1) % puzzlesPerRow === 0) {
+                    // Move to the next row
+                    xPos = xOffset;
+                    yPos += puzzleHeight + spaceBetween;
+                    currentRow++;
+                }
+            });
+
+            doc.save('sudoku_puzzles.pdf');
+        }
+
+        function drawSudoku(doc, grid, xPos, yPos) {
+            const cellSize = 6;  // Increase cell size for better clarity
+            const fontSize = 12; // Adjust font size for numbers
+
+            // Draw the Sudoku grid
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    doc.rect(xPos + j * cellSize, yPos + i * cellSize, cellSize, cellSize);
+                    if (grid[i][j] !== 0) {
+                        doc.setFontSize(fontSize);
+                        doc.text(grid[i][j].toString(), xPos + j * cellSize + 2, yPos + i * cellSize + 4);
+                    }
+                }
+            }
+
+            // Draw thick lines for subgrids
+            for (let i = 0; i < 3; i++) {
+                doc.setLineWidth(0.5);
+                doc.rect(xPos + i * 3 * cellSize, yPos, 3 * cellSize, 3 * cellSize);
+                doc.rect(xPos + i * 3 * cellSize, yPos + 3 * cellSize, 3 * cellSize, 3 * cellSize);
+                doc.rect(xPos + i * 3 * cellSize, yPos + 6 * cellSize, 3 * cellSize, 3 * cellSize);
+            }
+        }
+
+        document.getElementById('nextButton').addEventListener('click', loadNewPuzzle);
+        document.getElementById('saveButton').addEventListener('click', savePuzzle);
+        document.getElementById('generatePdfButton').addEventListener('click', generatePdf);
+
+        loadNewPuzzle();
+    </script>
+</body>
+</html>
